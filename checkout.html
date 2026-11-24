@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Оформление заказа — Страна подарков</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header"></header>
+
+  <main class="container">
+    <div class="page-hero">
+      <div class="page-hero-copy">
+        <div class="breadcrumbs"><a href="index.html">Главная</a><span>·</span><a href="cart.html">Корзина</a><span>·</span><span>Оформление</span></div>
+        <h1>Оформление заказа</h1>
+        <p>Осталось несколько деталей: куда и кому доставить подарок. Мы свяжемся, чтобы подтвердить время.</p>
+      </div>
+      <div class="page-hero-art" id="pageHeroArt"></div>
+    </div>
+
+    <div id="checkoutRoot"></div>
+  </main>
+
+  <footer class="footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/order.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('pageHeroArt').innerHTML = artPackaging('envelope', 4);
+
+      const root = document.getElementById('checkoutRoot');
+      const user = currentUser();
+      const cart = getCart();
+
+      if (!user) {
+        root.innerHTML = '<div class="empty-state" style="margin-top:30px;margin-bottom:80px">' +
+          '<div class="empty-mark">' + sakuraLogo() + '</div>' +
+          '<h3>Войдите в аккаунт</h3>' +
+          '<p>Чтобы оформить заказ и следить за его статусом, войдите или создайте аккаунт. Корзина сохранится.</p>' +
+          '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">' +
+            '<a href="login.html" class="btn btn-primary">Войти</a>' +
+            '<a href="register.html" class="btn btn-outline">Регистрация</a>' +
+          '</div>' +
+        '</div>';
+        return;
+      }
+
+      if (!cart.length) {
+        root.innerHTML = '<div class="empty-state" style="margin-top:30px;margin-bottom:80px">' +
+          '<div class="empty-mark">' + sakuraLogo() + '</div>' +
+          '<h3>Корзина пуста</h3>' +
+          '<p>Добавьте подарок из каталога или соберите свой набор — и возвращайтесь к оформлению.</p>' +
+          '<a href="catalog.html" class="btn btn-primary">В каталог</a>' +
+        '</div>';
+        return;
+      }
+
+      const total = cartTotal();
+
+      root.innerHTML = '<div class="checkout-layout">' +
+        '<form class="form-card" id="checkoutForm">' +
+          '<h2>Данные получателя</h2>' +
+          '<p>Поля со звёздочкой обязательны.</p>' +
+          '<div class="form-grid">' +
+            '<label class="field"><span>Имя получателя *</span><input type="text" name="recipient" value="' + escapeHtml(user.name) + '" required></label>' +
+            '<label class="field"><span>Телефон *</span><input type="tel" name="phone" value="' + escapeHtml(user.phone || '') + '" required></label>' +
+          '</div>' +
+          '<label class="field"><span>Адрес доставки *</span><input type="text" name="address" value="' + escapeHtml(user.address || '') + '" placeholder="г. Элиста, улица, дом, квартира" required></label>' +
+          '<div class="form-grid">' +
+            '<label class="field"><span>Дата доставки</span><input type="date" name="date"></label>' +
+            '<label class="field"><span>Удобное время</span><select name="time"><option value="09-12">09:00–12:00</option><option value="12-15">12:00–15:00</option><option value="15-18">15:00–18:00</option><option value="18-21">18:00–21:00</option></select></label>' +
+          '</div>' +
+          '<label class="field"><span>Комментарий к заказу</span><textarea name="comment" placeholder="Текст открытки, пожелания по упаковке, ориентиры…"></textarea></label>' +
+          '<p class="form-note">Нажимая «Подтвердить заказ», вы соглашаетесь с условиями обработки персональных данных.</p>' +
+          '<button type="submit" class="btn btn-primary btn-block" style="margin-top:16px">Подтвердить заказ · ' + formatPrice(total) + '</button>' +
+        '</form>' +
+        '<aside class="order-summary">' +
+          '<h2>Ваш заказ</h2>' +
+          cart.map(function (item) {
+            return '<div class="summary-item">' +
+              '<div class="summary-thumb">' + (item.img ? '<img src="' + imageUrl(item.img) + '" alt="' + escapeHtml(item.name) + '">' : artByType(item.art || item.cat || 'sets', item.variant || 0)) + '</div>' +
+              '<div class="summary-name"><b>' + escapeHtml(item.name) + '</b><span>' + item.qty + ' шт. · ' + (item.custom_data ? 'собран вручную' : categoryName(item.cat)) + '</span></div>' +
+              '<div class="summary-price">' + formatPrice(item.price * item.qty) + '</div>' +
+            '</div>';
+          }).join('') +
+          '<div class="summary-row" style="margin-top:10px"><span>Доставка</span><strong>бесплатно</strong></div>' +
+          '<div class="summary-row total"><span>Итого</span><strong>' + formatPrice(total) + '</strong></div>' +
+          '<p class="summary-note">После оформления заказ появится в личном кабинете со статусом «Новый».</p>' +
+        '</aside>' +
+      '</div>';
+
+      const form = document.getElementById('checkoutForm');
+      const dateInput = form.querySelector('[name="date"]');
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      dateInput.min = yyyy + '-' + mm + '-' + dd;
+
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        const data = new FormData(form);
+        const date = data.get('date');
+        const time = data.get('time');
+        let comment = String(data.get('comment') || '').trim();
+        if (date) {
+          comment = 'Доставка: ' + date + ', ' + time + '. ' + comment;
+        }
+        try {
+          const order = createOrder(
+            String(data.get('address') || '').trim(),
+            String(data.get('phone') || '').trim(),
+            comment,
+            String(data.get('recipient') || '').trim()
+          );
+          location.href = 'account.html?new=' + order.id;
+        } catch (error) {
+          showToast(error.message, 'error');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

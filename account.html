@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Личный кабинет — Страна подарков</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header"></header>
+
+  <main class="container">
+    <div class="page-hero">
+      <div class="page-hero-copy">
+        <div class="breadcrumbs"><a href="index.html">Главная</a><span>·</span><span>Личный кабинет</span></div>
+        <h1>Личный кабинет</h1>
+        <p>Здесь появляются ваши заказы, статусы доставки и оценки. Спасибо, что выбираете нас.</p>
+      </div>
+      <div class="page-hero-art" id="pageHeroArt"></div>
+    </div>
+
+    <div id="accountRoot"></div>
+  </main>
+
+  <footer class="footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/order.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      if (!isLogged()) {
+        location.href = 'login.html';
+        return;
+      }
+
+      document.getElementById('pageHeroArt').innerHTML = artJewelry(0);
+
+      const user = currentUser();
+      const root = document.getElementById('accountRoot');
+      const tempRatings = {};
+      const newOrderId = new URLSearchParams(location.search).get('new');
+
+      function statusBadge(status) {
+        return '<span class="status-badge status-' + status + '">' + (STATUS_LABELS[status] || status) + '</span>';
+      }
+
+      function itemArt(item) {
+        if (item.img) {
+          return '<img src="' + imageUrl(item.img) + '" alt="' + escapeHtml(item.name) + '">';
+        }
+        return artByType(item.art || item.cat || 'sets', item.variant || 0);
+      }
+
+      function plural(number, one, few, many) {
+        const mod10 = number % 10;
+        const mod100 = number % 100;
+        if (mod10 === 1 && mod100 !== 11) return one;
+        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+        return many;
+      }
+
+      function renderProfile() {
+        const orders = getOrdersByUser(user.id);
+        const totalSpent = orders.reduce(function (sum, order) { return sum + order.total; }, 0);
+        const initial = escapeHtml((user.name || 'Г').trim().charAt(0).toUpperCase());
+        const roleLabel = user.role === 'admin' ? 'Администратор' : user.role === 'assembler' ? 'Сборщик' : user.role === 'courier' ? 'Курьер' : 'Клиент';
+
+        return '<aside class="profile-card">' +
+          '<div class="profile-top">' +
+            '<div class="profile-avatar">' + initial + '</div>' +
+            '<div><div class="profile-name">' + escapeHtml(user.name) + '</div><div class="profile-role">' + roleLabel + '</div></div>' +
+          '</div>' +
+          '<div class="profile-info">' +
+            '<p><b>Email</b>' + escapeHtml(user.email) + '</p>' +
+            '<p><b>Телефон</b>' + escapeHtml(user.phone || 'не указан') + '</p>' +
+            '<p><b>Адрес</b>' + escapeHtml(user.address || 'не указан') + '</p>' +
+          '</div>' +
+          '<div class="profile-stats">' +
+            '<div class="profile-stat"><strong>' + orders.length + '</strong><span>заказов</span></div>' +
+            '<div class="profile-stat"><strong>' + formatPrice(totalSpent).replace(' ₽', '') + '</strong><span>потрачено, ₽</span></div>' +
+          '</div>' +
+          '<a href="catalog.html" class="btn btn-outline btn-block">К подаркам</a>' +
+        '</aside>';
+      }
+
+      function renderOrders() {
+        const orders = getOrdersByUser(user.id);
+
+        let content;
+        if (!orders.length) {
+          content = '<div class="empty-state">' +
+            '<div class="empty-mark">' + sakuraLogo() + '</div>' +
+            '<h3>Заказов пока нет</h3>' +
+            '<p>Самое время выбрать первый подарок. В каталоге 35 идей, а в конструкторе можно собрать свой набор.</p>' +
+            '<a href="catalog.html" class="btn btn-primary">Выбрать подарок</a>' +
+          '</div>';
+        } else {
+          content = orders.map(function (order) {
+            let action = '';
+            if (order.status === 'done' && !order.receivedAt) {
+              action = '<div class="order-actions">' +
+                '<p>Курьер отметил заказ как доставленный. Всё в порядке?</p>' +
+                '<button type="button" class="btn btn-success btn-sm" data-confirm="' + order.id + '">Подтвердить получение</button>' +
+              '</div>';
+            } else if (order.status === 'done' && order.receivedAt && !order.rating) {
+              action = '<div class="order-actions">' +
+                '<p>Спасибо! Поставьте оценку — это помогает нам становиться лучше.</p>' +
+                '<div class="rating-stars" data-stars="' + order.id + '">' +
+                  [1, 2, 3, 4, 5].map(function (value) {
+                    return '<button type="button" data-rate-order="' + order.id + '" data-rate-value="' + value + '" aria-label="Оценка ' + value + ' из 5">★</button>';
+                  }).join('') +
+                '</div>' +
+                '<textarea class="rating-textarea" id="review-' + order.id + '" placeholder="Несколько слов о подарке и доставке (необязательно)"></textarea>' +
+                '<button type="button" class="btn btn-primary btn-sm" data-submit-rating="' + order.id + '">Отправить оценку</button>' +
+              '</div>';
+            } else if (order.rating) {
+              action = '<div class="rating-view">' +
+                '<div class="stars">' + '★'.repeat(order.rating) + '☆'.repeat(5 - order.rating) + '</div>' +
+                (order.review ? '<div style="margin-top:4px">«' + escapeHtml(order.review) + '»</div>' : '') +
+              '</div>';
+            } else if (order.status === 'canceled') {
+              action = '<div class="order-actions"><p>Заказ отменён. Если это ошибка — напишите нам, поможем.</p></div>';
+            }
+
+            return '<article class="order-card">' +
+              '<div class="order-head">' +
+                '<div><div class="order-number">Заказ #' + order.id + '</div><div class="order-date">' + new Date(order.createdAt).toLocaleString('ru-RU') + '</div></div>' +
+                statusBadge(order.status) +
+              '</div>' +
+              '<div class="order-items">' + order.items.map(function (item) {
+                return '<div class="order-item">' +
+                  '<div class="order-thumb">' + itemArt(item) + '</div>' +
+                  '<div class="order-item-name"><b>' + escapeHtml(item.name) + '</b><span>' + item.qty + ' шт.' + (item.custom_data ? ' · ' + escapeHtml(item.custom_data) : '') + '</span></div>' +
+                  '<div class="order-item-price">' + formatPrice(item.price * item.qty) + '</div>' +
+                '</div>';
+              }).join('') + '</div>' +
+              '<div class="order-foot">' +
+                '<div>' +
+                  '<div class="order-total">Итого <b>' + formatPrice(order.total) + '</b></div>' +
+                  '<div class="order-address">' + escapeHtml(order.recipientName || order.userName) + ' · ' + escapeHtml(order.phone) + '<br>' + escapeHtml(order.address) + '</div>' +
+                '</div>' +
+                '<button type="button" class="btn btn-outline btn-sm" data-repeat="' + order.id + '">Повторить заказ</button>' +
+              '</div>' +
+              action +
+            '</article>';
+          }).join('');
+        }
+
+        document.getElementById('orders').innerHTML = content;
+      }
+
+      root.innerHTML = '<div class="account-layout">' + renderProfile() +
+        '<section class="account-main">' +
+          '<div class="account-head"><div><h1>Мои заказы</h1><p>Все заказы и их статусы</p></div><span class="eyebrow">' + getOrdersByUser(user.id).length + ' ' + plural(getOrdersByUser(user.id).length, 'заказ', 'заказа', 'заказов') + '</span></div>' +
+          '<div class="orders-list" id="orders"></div>' +
+        '</section>' +
+      '</div>';
+
+      const ordersEl = document.getElementById('orders');
+
+      ordersEl.addEventListener('click', function (event) {
+        const confirmButton = event.target.closest('[data-confirm]');
+        if (confirmButton) {
+          try {
+            confirmReceived(Number(confirmButton.dataset.confirm));
+            showToast('Получение подтверждено', 'success');
+            renderOrders();
+          } catch (error) {
+            showToast(error.message, 'error');
+          }
+          return;
+        }
+
+        const starButton = event.target.closest('[data-rate-order]');
+        if (starButton) {
+          const orderId = Number(starButton.dataset.rateOrder);
+          const value = Number(starButton.dataset.rateValue);
+          tempRatings[orderId] = value;
+          const stars = starButton.parentElement.querySelectorAll('button');
+          stars.forEach(function (star, index) {
+            star.classList.toggle('active', index < value);
+          });
+          return;
+        }
+
+        const submitRating = event.target.closest('[data-submit-rating]');
+        if (submitRating) {
+          const orderId = Number(submitRating.dataset.submitRating);
+          const rating = tempRatings[orderId] || 0;
+          if (!rating) {
+            showToast('Поставьте оценку от 1 до 5 звёзд', 'error');
+            return;
+          }
+          const reviewInput = document.getElementById('review-' + orderId);
+          try {
+            rateOrder(orderId, rating, reviewInput ? reviewInput.value : '');
+            showToast('Спасибо за отзыв!', 'success');
+            renderOrders();
+          } catch (error) {
+            showToast(error.message, 'error');
+          }
+          return;
+        }
+
+        const repeatButton = event.target.closest('[data-repeat]');
+        if (repeatButton) {
+          const order = getOrders().find(function (item) { return item.id === Number(repeatButton.dataset.repeat); });
+          if (order) {
+            const cart = getCart();
+            order.items.forEach(function (item) {
+              const existing = cart.find(function (cartItem) {
+                return cartItem.name === item.name && (cartItem.custom_data || '') === (item.custom_data || '');
+              });
+              if (existing) existing.qty += item.qty;
+              else cart.push(Object.assign({}, item));
+            });
+            saveCart(cart);
+            location.href = 'cart.html';
+          }
+        }
+      });
+
+      renderOrders();
+
+      if (newOrderId) {
+        showToast('Заказ #' + newOrderId + ' оформлен. Спасибо!', 'success');
+        history.replaceState({}, '', 'account.html');
+      }
+    });
+  </script>
+</body>
+</html>

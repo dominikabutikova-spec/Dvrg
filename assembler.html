@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Сборка заказов — Страна подарков</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header"></header>
+
+  <main class="container">
+    <div class="page-hero">
+      <div class="page-hero-copy">
+        <div class="breadcrumbs"><a href="index.html">Главная</a><span>·</span><span>Сборка заказов</span></div>
+        <h1>Сборка заказов</h1>
+        <p>Возьмите заказ в работу, соберите подарок по составу и отметьте его готовым к доставке.</p>
+      </div>
+      <div class="page-hero-art" id="pageHeroArt"></div>
+    </div>
+
+    <div class="queue-grid" id="orders"></div>
+  </main>
+
+  <footer class="footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/order.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      if (!requireRole(['assembler'])) return;
+      const me = currentUser();
+      document.getElementById('pageHeroArt').innerHTML = artSets(2);
+
+      function render() {
+        const orders = getOrdersByStatus(['new', 'assembling']);
+        const el = document.getElementById('orders');
+
+        if (!orders.length) {
+          el.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-mark">' + sakuraLogo() + '</div><h3>Очередь пуста</h3><p>Новые заказы появятся здесь сразу после оформления.</p><a href="admin.html" class="btn btn-outline">Посмотреть все заказы</a></div>';
+          return;
+        }
+
+        el.innerHTML = orders.map(function (order) {
+          return '<article class="queue-card">' +
+            '<div class="queue-head">' +
+              '<div><h3>Заказ #' + order.id + '</h3><p>' + new Date(order.createdAt).toLocaleString('ru-RU') + '</p></div>' +
+              '<span class="status-badge status-' + order.status + '">' + STATUS_LABELS[order.status] + '</span>' +
+            '</div>' +
+            '<div class="queue-info">' +
+              '<span><b>Получатель:</b> ' + escapeHtml(order.recipientName || order.userName) + '</span>' +
+              '<span><b>Телефон:</b> ' + escapeHtml(order.phone) + '</span>' +
+              '<span><b>Адрес:</b> ' + escapeHtml(order.address) + '</span>' +
+              (order.comment ? '<span><b>Комментарий:</b> ' + escapeHtml(order.comment) + '</span>' : '') +
+            '</div>' +
+            '<div class="queue-items">' + order.items.map(function (item) {
+              return '<div class="queue-item">' +
+                '<div class="queue-thumb">' + (item.img ? '<img src="' + imageUrl(item.img) + '" alt="' + escapeHtml(item.name) + '">' : artByType(item.art || item.cat || 'sets', item.variant || 0)) + '</div>' +
+                '<div><b>' + escapeHtml(item.name) + '</b> ×' + item.qty + (item.custom_data ? '<small>' + escapeHtml(item.custom_data) + '</small>' : '') + '</div>' +
+              '</div>';
+            }).join('') + '</div>' +
+            '<div class="queue-foot">' +
+              '<div class="queue-total">Итого<b>' + formatPrice(order.total) + '</b></div>' +
+              (order.status === 'new'
+                ? '<button type="button" class="btn btn-primary btn-sm" data-start="' + order.id + '">Начать сборку</button>'
+                : '<button type="button" class="btn btn-success btn-sm" data-done="' + order.id + '">Собран</button>') +
+            '</div>' +
+          '</article>';
+        }).join('');
+      }
+
+      document.getElementById('orders').addEventListener('click', function (event) {
+        const startButton = event.target.closest('[data-start]');
+        if (startButton) {
+          updateOrderStatus(Number(startButton.dataset.start), 'assembling', me.id, 'assembler');
+          showToast('Заказ взят в сборку', 'success');
+          render();
+          return;
+        }
+
+        const doneButton = event.target.closest('[data-done]');
+        if (doneButton) {
+          updateOrderStatus(Number(doneButton.dataset.done), 'assembled', me.id, 'assembler');
+          showToast('Заказ собран и передан курьеру', 'success');
+          render();
+        }
+      });
+
+      render();
+    });
+  </script>
+</body>
+</html>

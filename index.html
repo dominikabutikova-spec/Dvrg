@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Страна подарков — авторские букеты, сладости, готовые наборы и упаковка в Элисте. Подарок для неё и для него.">
+  <title>Страна подарков — подарок для неё и для него</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header"></header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-card">
+        <div class="hero-art" id="heroArt"></div>
+        <div class="hero-content">
+          <span class="eyebrow hero-eyebrow">ручная работа · Элиста</span>
+          <h1 class="hero-title"><span class="hero-line">Подарок <em>для неё</em></span><br>и для него</h1>
+          <p class="hero-subtitle">Цветы, сладости и маленькие сюрпризы в упаковке, которую хочется сохранить. Собираем вручную и доставляем бережно.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="catalog.html">Смотреть каталог</a>
+            <a class="btn btn-outline" href="constructor.html">Собрать свой</a>
+          </div>
+          <div class="hero-stats">
+            <div class="hero-stat"><strong>35</strong><span>подарков в каталоге</span></div>
+            <div class="hero-stat"><strong>5</strong><span>видов упаковки</span></div>
+            <div class="hero-stat"><strong>30 мин</strong><span>на сборку</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="perks container" aria-label="Преимущества">
+      <div class="perk">
+        <span class="perk-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+        </span>
+        <span class="perk-text"><strong>Соберём за 30 минут</strong><span>если подарок нужен срочно</span></span>
+      </div>
+      <div class="perk">
+        <span class="perk-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="7" cy="18.5" r="1.7"/><circle cx="17" cy="18.5" r="1.7"/></svg>
+        </span>
+        <span class="perk-text"><strong>Доставка по Элисте</strong><span>бережно и точно в срок</span></span>
+      </div>
+      <div class="perk">
+        <span class="perk-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16v12H4z"/><path d="M2 4h20v4H2z"/><path d="M12 8v12"/><path d="M12 8C9.6 8 8 6.7 8 5.1 8 3.9 9 3 10.2 3 11.7 3 12 5.5 12 8Z"/><path d="M12 8c2.4 0 4-1.3 4-2.9C16 3.9 15 3 13.8 3 12.3 3 12 5.5 12 8Z"/></svg>
+        </span>
+        <span class="perk-text"><strong>Упаковка в подарок</strong><span>лента и открытка с вашим текстом</span></span>
+      </div>
+    </section>
+
+    <section class="section container" id="categories">
+      <div class="section-head">
+        <span class="eyebrow">выбирайте с любовью</span>
+        <div class="section-title-wrap">
+          <span class="line"></span>
+          <h2 class="section-title">Категории</h2>
+          <span class="line"></span>
+        </div>
+        <p class="section-subtitle">От одного цветка до большого сюрприза</p>
+      </div>
+      <div class="categories-grid" id="categoryGrid"></div>
+    </section>
+
+    <section class="section container" id="hits">
+      <div class="section-head">
+        <span class="eyebrow">самое любимое</span>
+        <div class="section-title-wrap">
+          <span class="line"></span>
+          <h2 class="section-title">Хиты продаж</h2>
+          <span class="line"></span>
+        </div>
+        <p class="section-subtitle">Подарки, которые выбирают чаще всего</p>
+      </div>
+      <div class="products-grid" id="hitGrid"></div>
+      <div style="display:flex;justify-content:center;margin-top:34px">
+        <a href="catalog.html" class="btn btn-outline">Показать все подарки</a>
+      </div>
+    </section>
+
+    <section class="packaging-band" id="packaging">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">красиво снаружи, бережно внутри</span>
+          <div class="section-title-wrap">
+            <span class="line"></span>
+            <h2 class="section-title">Примеры упаковки</h2>
+            <span class="line"></span>
+          </div>
+          <p class="section-subtitle">Подберём упаковку под настроение подарка</p>
+        </div>
+
+        <div class="packaging-grid" id="packagingGrid"></div>
+
+        <div class="packaging-band-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16v12H4z"/><path d="M2 4h20v4H2z"/><path d="M12 8v12"/><path d="M12 8C9.6 8 8 6.7 8 5.1 8 3.9 9 3 10.2 3 11.7 3 12 5.5 12 8Z"/><path d="M12 8c2.4 0 4-1.3 4-2.9C16 3.9 15 3 13.8 3 12.3 3 12 5.5 12 8Z"/></svg>
+          <p>К любому подарку бесплатно добавим открытку с вашим текстом и сургучную печать.</p>
+          <a href="packaging.html">Все виды упаковки</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="builder-cta container" id="builder">
+      <div class="builder-card">
+        <div class="builder-content">
+          <span class="eyebrow">конструктор подарка</span>
+          <h2 class="builder-title">Соберите подарок сами</h2>
+          <p class="builder-text">Выберите упаковку и наполнение — мы аккуратно соберём и доставим. Идеально, когда хочется удивить чем-то особенным.</p>
+          <div class="builder-steps">
+            <div class="builder-step"><span>01</span><p>Выберите упаковку</p></div>
+            <div class="builder-step"><span>02</span><p>Добавьте наполнение</p></div>
+            <div class="builder-step"><span>03</span><p>Напишите открытку</p></div>
+          </div>
+          <div class="builder-actions">
+            <a href="constructor.html" class="btn btn-primary">Начать сборку</a>
+            <a href="packaging.html" class="text-link">Смотреть упаковку</a>
+          </div>
+        </div>
+        <div class="builder-visual" id="builderVisual"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/order.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('heroArt').innerHTML = artHero();
+      document.getElementById('categoryGrid').innerHTML = CATEGORIES.map(renderCategoryCard).join('');
+      document.getElementById('hitGrid').innerHTML = PRODUCTS
+        .slice()
+        .sort(function (a, b) { return b.popularity - a.popularity; })
+        .slice(0, 8)
+        .map(renderProductCard)
+        .join('');
+      document.getElementById('packagingGrid').innerHTML = PACKAGING.slice(0, 4).map(renderPackagingCard).join('');
+      document.getElementById('builderVisual').innerHTML = artSets(1);
+    });
+  </script>
+</body>
+</html>

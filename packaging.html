@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Упаковка подарков — Страна подарков</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header"></header>
+
+  <main class="container">
+    <div class="page-hero">
+      <div class="page-hero-copy">
+        <div class="breadcrumbs"><a href="index.html">Главная</a><span>·</span><span>Упаковка</span></div>
+        <h1>Упаковка, которую хочется сохранить</h1>
+        <p>Бархатные ленты, крафт, сургучные печати и цветы-комплименты. Выберите упаковку для готового подарка или соберите свой набор в конструкторе.</p>
+      </div>
+      <div class="page-hero-art" id="pageHeroArt"></div>
+    </div>
+
+    <section class="section" style="padding-top:46px">
+      <div class="section-head section-head--left">
+        <span class="eyebrow">образцы упаковки</span>
+        <div class="section-title-wrap"><h2 class="section-title">Наши варианты</h2></div>
+        <p class="section-subtitle">Цены указаны за упаковку без наполнения — итоговую стоимость покажем в конструкторе.</p>
+      </div>
+      <div class="packaging-page-grid" id="packagingGrid"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <span class="eyebrow">приятные детали</span>
+        <div class="section-title-wrap">
+          <span class="line"></span>
+          <h2 class="section-title">Что внутри</h2>
+          <span class="line"></span>
+        </div>
+      </div>
+      <div class="perks" style="grid-template-columns:repeat(3,1fr)">
+        <div class="perk">
+          <span class="perk-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v16l-7-4-7 4V4Z"/><path d="M9 9h6"/></svg>
+          </span>
+          <span class="perk-text"><strong>Открытка с вашим текстом</strong><span>напишем от руки или напечатаем</span></span>
+        </div>
+        <div class="perk">
+          <span class="perk-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
+          </span>
+          <span class="perk-text"><strong>Сургучная печать</strong><span>фирменный оттиск на конверте</span></span>
+        </div>
+        <div class="perk">
+          <span class="perk-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16v12H4z"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/></svg>
+          </span>
+          <span class="perk-text"><strong>Лента в тон</strong><span>подберём цвет под настроение</span></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="builder-cta" style="margin-top:70px">
+      <div class="builder-card">
+        <div class="builder-content">
+          <span class="eyebrow">индивидуальный подход</span>
+          <h2 class="builder-title">Хотите что-то особенное?</h2>
+          <p class="builder-text">Соберите подарок с нуля: выберите упаковку, наполнение и открытку. Мы подскажем, что сочетается, и соберём всё вручную.</p>
+          <div class="builder-actions">
+            <a href="constructor.html" class="btn btn-primary">Собрать подарок</a>
+            <a href="contact.html" class="text-link">Задать вопрос</a>
+          </div>
+        </div>
+        <div class="builder-visual" id="builderVisual"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/order.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('pageHeroArt').innerHTML = artPackaging('hat', 2);
+      document.getElementById('packagingGrid').innerHTML = PACKAGING.map(renderPackagingCard).join('');
+      document.getElementById('builderVisual').innerHTML = artPackaging('box', 0);
+    });
+  </script>
+</body>
+</html>

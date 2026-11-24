@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Корзина — Страна подарков</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header"></header>
+
+  <main class="container">
+    <div class="page-hero">
+      <div class="page-hero-copy">
+        <div class="breadcrumbs"><a href="index.html">Главная</a><span>·</span><span>Корзина</span></div>
+        <h1>Ваша корзина</h1>
+        <p>Проверьте состав подарка, количество и итоговую сумму. Упаковка и открытка уже включены.</p>
+      </div>
+      <div class="page-hero-art" id="pageHeroArt"></div>
+    </div>
+
+    <div id="cartRoot"></div>
+    <section class="section" id="recommendations" style="padding-top:0;padding-bottom:80px"></section>
+  </main>
+
+  <footer class="footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/order.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('pageHeroArt').innerHTML = artPackaging('heart', 1);
+
+      const root = document.getElementById('cartRoot');
+
+      function itemArt(item) {
+        if (item.img) {
+          return '<img src="' + imageUrl(item.img) + '" alt="' + escapeHtml(item.name) + '">';
+        }
+        return artByType(item.art || item.cat || 'sets', item.variant || 0);
+      }
+
+      function renderCart() {
+        const cart = getCart();
+
+        if (!cart.length) {
+          root.innerHTML = '<div class="empty-state" style="margin-top:30px;margin-bottom:80px">' +
+            '<div class="empty-mark">' + sakuraLogo() + '</div>' +
+            '<h3>Корзина пока пуста</h3>' +
+            '<p>Давайте это исправим: в каталоге 35 идей для подарка, а в конструкторе можно собрать свой.</p>' +
+            '<a href="catalog.html" class="btn btn-primary">Перейти в каталог</a>' +
+          '</div>';
+          renderRecommendations();
+          return;
+        }
+
+        const total = cartTotal();
+        const count = cartCount();
+
+        root.innerHTML = '<div class="cart-layout">' +
+          '<div class="cart-list">' + cart.map(function (item, index) {
+            return '<article class="cart-item">' +
+              '<div class="cart-thumb">' + itemArt(item) + '</div>' +
+              '<div class="cart-info">' +
+                '<h3>' + escapeHtml(item.name) + '</h3>' +
+                '<div class="cart-meta">' + (item.type === 'custom' ? 'Собран вручную' : categoryName(item.cat)) + '</div>' +
+                (item.custom_data ? '<p class="cart-custom">' + escapeHtml(item.custom_data) + '</p>' : '') +
+              '</div>' +
+              '<div class="qty-control">' +
+                '<button type="button" data-qty="' + index + '" data-delta="-1" aria-label="Уменьшить количество">−</button>' +
+                '<span>' + item.qty + '</span>' +
+                '<button type="button" data-qty="' + index + '" data-delta="1" aria-label="Увеличить количество">+</button>' +
+              '</div>' +
+              '<div class="cart-price">' + formatPrice(item.price * item.qty) + '</div>' +
+              '<button type="button" class="remove-btn" data-remove="' + index + '" aria-label="Удалить подарок">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5 7h14M9 7V5h6v2M8 10v8M12 10v8M16 10v8M6 7l1 13h10l1-13"/></svg>' +
+              '</button>' +
+            '</article>';
+          }).join('') + '</div>' +
+          '<aside class="cart-summary">' +
+            '<h2>Итого</h2>' +
+            '<div class="summary-row"><span>Подарков</span><strong>' + count + '</strong></div>' +
+            '<div class="summary-row"><span>Стоимость</span><strong>' + formatPrice(total) + '</strong></div>' +
+            '<div class="summary-row"><span>Доставка по Элисте</span><strong>бесплатно</strong></div>' +
+            '<div class="summary-row total"><span>К оплате</span><strong>' + formatPrice(total) + '</strong></div>' +
+            '<a href="checkout.html" class="btn btn-primary btn-block">Оформить заказ</a>' +
+            '<p class="summary-note">Оплата при получении или переводом. Перед доставкой менеджер свяжется с вами.</p>' +
+            '<a href="catalog.html" class="text-link">Продолжить покупки</a>' +
+          '</aside>' +
+        '</div>';
+
+        renderRecommendations();
+      }
+
+      function renderRecommendations() {
+        const cart = getCart();
+        const names = cart.map(function (item) { return item.name; });
+        let recommendations = PRODUCTS
+          .filter(function (product) { return names.indexOf(product.name) === -1; })
+          .sort(function (a, b) { return b.popularity - a.popularity; })
+          .slice(0, 4);
+
+        if (!recommendations.length) {
+          document.getElementById('recommendations').innerHTML = '';
+          return;
+        }
+
+        document.getElementById('recommendations').innerHTML =
+          '<div class="section-head section-head--left">' +
+            '<span class="eyebrow">может понравиться</span>' +
+            '<div class="section-title-wrap"><h2 class="section-title">Ещё идеи для подарка</h2></div>' +
+          '</div>' +
+          '<div class="products-grid">' + recommendations.map(renderProductCard).join('') + '</div>';
+      }
+
+      root.addEventListener('click', function (event) {
+        const qtyButton = event.target.closest('[data-qty]');
+        if (qtyButton) {
+          changeQty(Number(qtyButton.dataset.qty), Number(qtyButton.dataset.delta));
+          renderCart();
+          return;
+        }
+
+        const removeButton = event.target.closest('[data-remove]');
+        if (removeButton) {
+          removeFromCart(Number(removeButton.dataset.remove));
+          showToast('Подарок удалён из корзины');
+          renderCart();
+        }
+      });
+
+      renderCart();
+    });
+  </script>
+</body>
+</html>

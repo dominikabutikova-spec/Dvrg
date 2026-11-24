@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Каталог подарков — Страна подарков</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header"></header>
+
+  <main class="container">
+    <div class="page-hero">
+      <div class="page-hero-copy">
+        <div class="breadcrumbs"><a href="index.html">Главная</a><span>·</span><span>Каталог</span></div>
+        <h1>Каталог подарков</h1>
+        <p>35 идей для дня рождения, свидания, благодарности или просто хорошего дня. Выберите категорию или найдите подарок по названию.</p>
+      </div>
+      <div class="page-hero-art" id="pageHeroArt"></div>
+    </div>
+
+    <div class="catalog-toolbar" id="catalogSearch">
+      <div class="filter-row" id="filters"></div>
+      <div class="catalog-controls">
+        <label class="search-field">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+          <input type="search" id="searchInput" placeholder="Найти подарок: розы, шоколад, мишка…" aria-label="Поиск подарка">
+        </label>
+        <select class="sort-select" id="sortSelect" aria-label="Сортировка">
+          <option value="popular">Сначала популярные</option>
+          <option value="cheap">Сначала дешевле</option>
+          <option value="expensive">Сначала дороже</option>
+          <option value="name">По названию</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="catalog-meta">
+      <span id="resultCount"></span>
+      <span>Все цены указаны за готовый подарок</span>
+    </div>
+
+    <div class="products-grid" id="grid"></div>
+  </main>
+
+  <footer class="footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/order.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('pageHeroArt').innerHTML = artFlowers(0);
+
+      const params = new URLSearchParams(location.search);
+      let activeCat = params.get('cat') || 'all';
+      let query = '';
+      let sort = 'popular';
+
+      const filtersEl = document.getElementById('filters');
+      const gridEl = document.getElementById('grid');
+      const searchEl = document.getElementById('searchInput');
+      const sortEl = document.getElementById('sortSelect');
+      const countEl = document.getElementById('resultCount');
+
+      function renderFilters() {
+        const chips = [{ id: 'all', name: 'Все подарки' }].concat(CATEGORIES);
+        filtersEl.innerHTML = chips.map(function (category) {
+          return '<button type="button" class="chip' + (activeCat === category.id ? ' active' : '') + '" data-cat="' + category.id + '">' + category.name + '</button>';
+        }).join('');
+      }
+
+      function productMatches(product) {
+        if (activeCat !== 'all' && product.cat !== activeCat) return false;
+        if (!query) return true;
+        const haystack = [product.name, product.desc, product.contents, product.color, categoryName(product.cat)].join(' ').toLowerCase();
+        return haystack.indexOf(query.toLowerCase()) !== -1;
+      }
+
+      function sortProducts(list) {
+        const sorted = list.slice();
+        if (sort === 'cheap') sorted.sort(function (a, b) { return a.price - b.price; });
+        else if (sort === 'expensive') sorted.sort(function (a, b) { return b.price - a.price; });
+        else if (sort === 'name') sorted.sort(function (a, b) { return a.name.localeCompare(b.name, 'ru'); });
+        else sorted.sort(function (a, b) { return b.popularity - a.popularity; });
+        return sorted;
+      }
+
+      function renderGrid() {
+        const list = sortProducts(PRODUCTS.filter(productMatches));
+        countEl.innerHTML = 'Найдено <strong>' + list.length + '</strong> ' + plural(list.length, 'подарок', 'подарка', 'подарков');
+        if (!list.length) {
+          gridEl.innerHTML = '<div class="empty-state" style="grid-column:1/-1">' +
+            '<div class="empty-mark">' + sakuraLogo() + '</div>' +
+            '<h3>Ничего не нашлось</h3>' +
+            '<p>Попробуйте другую категорию или измените запрос. А ещё можно собрать подарок самостоятельно.</p>' +
+            '<a href="constructor.html" class="btn btn-primary">Собрать подарок</a>' +
+          '</div>';
+          return;
+        }
+        gridEl.innerHTML = list.map(renderProductCard).join('');
+      }
+
+      function plural(number, one, few, many) {
+        const mod10 = number % 10;
+        const mod100 = number % 100;
+        if (mod10 === 1 && mod100 !== 11) return one;
+        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+        return many;
+      }
+
+      filtersEl.addEventListener('click', function (event) {
+        const chip = event.target.closest('[data-cat]');
+        if (!chip) return;
+        activeCat = chip.dataset.cat;
+        const nextUrl = new URL(location.href);
+        if (activeCat === 'all') nextUrl.searchParams.delete('cat');
+        else nextUrl.searchParams.set('cat', activeCat);
+        history.replaceState({}, '', nextUrl);
+        renderFilters();
+        renderGrid();
+      });
+
+      searchEl.addEventListener('input', function () {
+        query = searchEl.value.trim();
+        renderGrid();
+      });
+
+      sortEl.addEventListener('change', function () {
+        sort = sortEl.value;
+        renderGrid();
+      });
+
+      renderFilters();
+      renderGrid();
+    });
+  </script>
+</body>
+</html>

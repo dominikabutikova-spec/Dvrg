@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Собери сам — Страна подарков</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header"></header>
+
+  <main class="container">
+    <div class="page-hero">
+      <div class="page-hero-copy">
+        <div class="breadcrumbs"><a href="index.html">Главная</a><span>·</span><span>Собери сам</span></div>
+        <h1>Соберите подарок сами</h1>
+        <p>Выберите упаковку и наполнение — мы аккуратно соберём всё вручную, добавим открытку с вашим текстом и доставим получателю.</p>
+      </div>
+      <div class="page-hero-art" id="pageHeroArt"></div>
+    </div>
+
+    <div class="constructor-layout">
+      <section class="constructor-column">
+        <h2>1. Упаковка</h2>
+        <p>Основа настроения: от строгого крафта до романтичного сердца.</p>
+        <div class="option-list" id="boxes"></div>
+      </section>
+
+      <section class="constructor-column">
+        <h2>2. Наполнение</h2>
+        <p>Можно выбрать несколько — мы красиво разложим всё внутри.</p>
+        <div class="option-list" id="fillings"></div>
+      </section>
+
+      <aside class="constructor-preview">
+        <div class="preview-art" id="previewArt"></div>
+        <h2>Ваш набор</h2>
+        <div class="preview-list" id="previewList"></div>
+        <div class="preview-total"><span>Итого</span><strong id="total">0 ₽</strong></div>
+        <button class="btn btn-primary" type="button" id="addCustomBtn">Добавить в корзину</button>
+        <p class="constructor-note">Открытка и лента уже включены в стоимость упаковки.</p>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/order.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('pageHeroArt').innerHTML = artSets(0);
+
+      let selectedBox = null;
+      let selectedFillings = new Set();
+      const requestedBox = new URLSearchParams(location.search).get('box');
+      if (requestedBox && BOXES.some(function (box) { return box.id === requestedBox; })) {
+        selectedBox = requestedBox;
+      }
+
+      const boxesEl = document.getElementById('boxes');
+      const fillingsEl = document.getElementById('fillings');
+      const previewArtEl = document.getElementById('previewArt');
+      const previewListEl = document.getElementById('previewList');
+      const totalEl = document.getElementById('total');
+
+      function renderBoxes() {
+        boxesEl.innerHTML = BOXES.map(function (box) {
+          return '<label class="option' + (selectedBox === box.id ? ' selected' : '') + '" data-box="' + box.id + '">' +
+            '<input type="radio" name="box" value="' + box.id + '"' + (selectedBox === box.id ? ' checked' : '') + '>' +
+            '<span class="option-art">' + artPackaging(box.art, box.variant) + '</span>' +
+            '<span class="option-info"><strong>' + box.name + '</strong><small>' + box.color + ' · ' + box.desc + '</small></span>' +
+            '<span class="option-price">' + formatPrice(box.price) + '</span>' +
+          '</label>';
+        }).join('');
+      }
+
+      function renderFillings() {
+        fillingsEl.innerHTML = FILLINGS.map(function (filling) {
+          return '<label class="option' + (selectedFillings.has(filling.id) ? ' selected' : '') + '" data-filling="' + filling.id + '">' +
+            '<input type="checkbox" value="' + filling.id + '"' + (selectedFillings.has(filling.id) ? ' checked' : '') + '>' +
+            '<span class="option-art">' + fillingIcon(filling.icon) + '</span>' +
+            '<span class="option-info"><strong>' + filling.name + '</strong><small>' + filling.type + ' · ' + filling.color + '</small></span>' +
+            '<span class="option-price">' + formatPrice(filling.price) + '</span>' +
+          '</label>';
+        }).join('');
+      }
+
+      function renderPreview() {
+        const box = BOXES.find(function (item) { return item.id === selectedBox; });
+        const fillings = Array.from(selectedFillings).map(function (id) {
+          return FILLINGS.find(function (item) { return item.id === id; });
+        }).filter(Boolean);
+
+        previewArtEl.innerHTML = box ? artPackaging(box.art, box.variant) : artSets(3);
+
+        if (!box) {
+          previewListEl.innerHTML = '<p>Сначала выберите упаковку.</p>';
+        } else if (!fillings.length) {
+          previewListEl.innerHTML = '<p><b>' + box.name + '</b><br>Добавьте хотя бы одно наполнение.</p>';
+        } else {
+          previewListEl.innerHTML = '<p><b>' + box.name + '</b></p>' + fillings.map(function (filling) {
+            return '<p>' + filling.name + ' · ' + formatPrice(filling.price) + '</p>';
+          }).join('');
+        }
+
+        const sum = (box ? box.price : 0) + fillings.reduce(function (total, filling) { return total + filling.price; }, 0);
+        totalEl.textContent = formatPrice(sum);
+        return sum;
+      }
+
+      boxesEl.addEventListener('click', function (event) {
+        const option = event.target.closest('[data-box]');
+        if (!option) return;
+        event.preventDefault();
+        selectedBox = option.dataset.box;
+        renderBoxes();
+        renderPreview();
+      });
+
+      fillingsEl.addEventListener('click', function (event) {
+        const option = event.target.closest('[data-filling]');
+        if (!option) return;
+        event.preventDefault();
+        const id = option.dataset.filling;
+        if (selectedFillings.has(id)) selectedFillings.delete(id);
+        else selectedFillings.add(id);
+        renderFillings();
+        renderPreview();
+      });
+
+      document.getElementById('addCustomBtn').addEventListener('click', function () {
+        if (!selectedBox) {
+          showToast('Сначала выберите упаковку', 'error');
+          return;
+        }
+        if (selectedFillings.size === 0) {
+          showToast('Добавьте хотя бы одно наполнение', 'error');
+          return;
+        }
+
+        const box = BOXES.find(function (item) { return item.id === selectedBox; });
+        const fillings = Array.from(selectedFillings).map(function (id) {
+          return FILLINGS.find(function (item) { return item.id === id; });
+        }).filter(Boolean);
+        const sum = renderPreview();
+
+        addToCart({
+          type: 'custom',
+          name: 'Набор: ' + box.name,
+          price: sum,
+          qty: 1,
+          art: box.art,
+          variant: box.variant,
+          cat: 'sets',
+          custom_data: 'Упаковка: ' + box.name + '. Наполнение: ' + fillings.map(function (filling) { return filling.name; }).join(', ') + '. Открытка с вашим текстом.'
+        });
+
+        selectedBox = null;
+        selectedFillings = new Set();
+        renderBoxes();
+        renderFillings();
+        renderPreview();
+      });
+
+      renderBoxes();
+      renderFillings();
+      renderPreview();
+    });
+  </script>
+</body>
+</html>

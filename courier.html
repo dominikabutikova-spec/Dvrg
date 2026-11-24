@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Доставка заказов — Страна подарков</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header"></header>
+
+  <main class="container">
+    <div class="page-hero">
+      <div class="page-hero-copy">
+        <div class="breadcrumbs"><a href="index.html">Главная</a><span>·</span><span>Доставка</span></div>
+        <h1>Доставка заказов</h1>
+        <p>Заказы, готовые к отправке, и те, что уже в пути. После доставки клиент подтвердит получение и сможет поставить оценку.</p>
+      </div>
+      <div class="page-hero-art" id="pageHeroArt"></div>
+    </div>
+
+    <div class="queue-grid" id="orders"></div>
+  </main>
+
+  <footer class="footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/order.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      if (!requireRole(['courier'])) return;
+      const me = currentUser();
+      document.getElementById('pageHeroArt').innerHTML = artToys(0);
+
+      function render() {
+        const orders = getOrdersByStatus(['assembled', 'delivering']);
+        const el = document.getElementById('orders');
+
+        if (!orders.length) {
+          el.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-mark">' + sakuraLogo() + '</div><h3>Нет заказов на доставку</h3><p>Собранные заказы появятся здесь автоматически.</p><a href="admin.html" class="btn btn-outline">Открыть админ-панель</a></div>';
+          return;
+        }
+
+        el.innerHTML = orders.map(function (order) {
+          return '<article class="queue-card">' +
+            '<div class="queue-head">' +
+              '<div><h3>Заказ #' + order.id + '</h3><p>' + new Date(order.createdAt).toLocaleString('ru-RU') + '</p></div>' +
+              '<span class="status-badge status-' + order.status + '">' + STATUS_LABELS[order.status] + '</span>' +
+            '</div>' +
+            '<div class="queue-info">' +
+              '<span><b>Получатель:</b> ' + escapeHtml(order.recipientName || order.userName) + '</span>' +
+              '<span><b>Телефон:</b> <a href="tel:' + escapeHtml(order.phone) + '" style="color:var(--maroon);font-weight:600">' + escapeHtml(order.phone) + '</a></span>' +
+              '<span><b>Адрес:</b> ' + escapeHtml(order.address) + '</span>' +
+              (order.comment ? '<span><b>Комментарий:</b> ' + escapeHtml(order.comment) + '</span>' : '') +
+            '</div>' +
+            '<div class="queue-items">' + order.items.map(function (item) {
+              return '<div class="queue-item">' +
+                '<div class="queue-thumb">' + (item.img ? '<img src="' + imageUrl(item.img) + '" alt="' + escapeHtml(item.name) + '">' : artByType(item.art || item.cat || 'sets', item.variant || 0)) + '</div>' +
+                '<div><b>' + escapeHtml(item.name) + '</b> ×' + item.qty + (item.custom_data ? '<small>' + escapeHtml(item.custom_data) + '</small>' : '') + '</div>' +
+              '</div>';
+            }).join('') + '</div>' +
+            '<div class="queue-foot">' +
+              '<div class="queue-total">К оплате<b>' + formatPrice(order.total) + '</b></div>' +
+              (order.status === 'assembled'
+                ? '<button type="button" class="btn btn-primary btn-sm" data-start="' + order.id + '">Начать доставку</button>'
+                : '<button type="button" class="btn btn-success btn-sm" data-delivered="' + order.id + '">Доставлен</button>') +
+            '</div>' +
+          '</article>';
+        }).join('');
+      }
+
+      document.getElementById('orders').addEventListener('click', function (event) {
+        const startButton = event.target.closest('[data-start]');
+        if (startButton) {
+          updateOrderStatus(Number(startButton.dataset.start), 'delivering', me.id, 'courier');
+          showToast('Доставка начата', 'success');
+          render();
+          return;
+        }
+
+        const deliveredButton = event.target.closest('[data-delivered]');
+        if (deliveredButton) {
+          updateOrderStatus(Number(deliveredButton.dataset.delivered), 'done', me.id, 'courier');
+          showToast('Заказ доставлен. Клиент подтвердит получение.', 'success');
+          render();
+        }
+      });
+
+      render();
+    });
+  </script>
+</body>
+</html>

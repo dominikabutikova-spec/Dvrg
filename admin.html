@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Админ-панель — Страна подарков</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header"></header>
+
+  <main class="container">
+    <div class="page-hero">
+      <div class="page-hero-copy">
+        <div class="breadcrumbs"><a href="index.html">Главная</a><span>·</span><span>Админ-панель</span></div>
+        <h1>Панель администратора</h1>
+        <p>Заказы, статусы, пользователи, оценки и обращения — всё в одном месте.</p>
+      </div>
+      <div class="page-hero-art" id="pageHeroArt"></div>
+    </div>
+
+    <div class="stats-grid" id="stats"></div>
+
+    <section class="data-section">
+      <h2>Заказы</h2>
+      <div class="data-card" id="orders"></div>
+    </section>
+
+    <section class="data-section">
+      <h2>Оценки клиентов</h2>
+      <div class="data-card" id="ratings"></div>
+    </section>
+
+    <section class="data-section">
+      <h2>Пользователи</h2>
+      <div class="data-card" id="users"></div>
+    </section>
+
+    <section class="data-section" style="margin-bottom:80px">
+      <h2>Обращения</h2>
+      <div class="data-card" id="messages"></div>
+    </section>
+  </main>
+
+  <footer class="footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/order.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      if (!requireRole(['admin'])) return;
+
+      document.getElementById('pageHeroArt').innerHTML = artJewelry(3);
+
+      const STATUSES = ['new', 'assembling', 'assembled', 'delivering', 'done', 'canceled'];
+
+      function renderStats() {
+        const orders = getOrders();
+        const total = orders.reduce(function (sum, order) { return sum + order.total; }, 0);
+        const average = getAverageRating();
+        const users = getUsers();
+
+        document.getElementById('stats').innerHTML =
+          '<div class="stat-card"><span>Всего заказов</span><strong>' + orders.length + '</strong></div>' +
+          '<div class="stat-card"><span>Общая сумма</span><strong>' + formatPrice(total) + '</strong></div>' +
+          '<div class="stat-card"><span>Средняя оценка</span><strong>' + (average ? average.toFixed(1) + ' ★' : '—') + '</strong></div>' +
+          '<div class="stat-card"><span>Пользователей</span><strong>' + users.length + '</strong></div>';
+      }
+
+      function renderOrders() {
+        const orders = getOrders().slice().reverse();
+        const el = document.getElementById('orders');
+
+        if (!orders.length) {
+          el.innerHTML = '<div class="empty-state" style="border:none;background:transparent"><div class="empty-mark">' + sakuraLogo() + '</div><h3>Заказов пока нет</h3><p>Оформите тестовый заказ из каталога, чтобы проверить весь путь.</p></div>';
+          return;
+        }
+
+        el.innerHTML = '<table class="data-table">' +
+          '<thead><tr><th>№</th><th>Клиент</th><th>Состав</th><th>Сумма</th><th>Статус</th><th>Дата</th><th>Изменить</th></tr></thead><tbody>' +
+          orders.map(function (order) {
+            return '<tr>' +
+              '<td>#' + order.id + '</td>' +
+              '<td>' + escapeHtml(order.recipientName || order.userName) + '<br><small>' + escapeHtml(order.phone) + '<br>' + escapeHtml(order.address) + '</small></td>' +
+              '<td>' + order.items.map(function (item) {
+                return escapeHtml(item.name) + ' ×' + item.qty + (item.custom_data ? '<br><small>' + escapeHtml(item.custom_data) + '</small>' : '');
+              }).join('<br>') + (order.comment ? '<br><small><i>' + escapeHtml(order.comment) + '</i></small>' : '') + '</td>' +
+              '<td><b>' + formatPrice(order.total) + '</b></td>' +
+              '<td><span class="status-badge status-' + order.status + '">' + (STATUS_LABELS[order.status] || order.status) + '</span></td>' +
+              '<td><small>' + new Date(order.createdAt).toLocaleString('ru-RU') + '</small></td>' +
+              '<td><select data-status-order="' + order.id + '">' +
+                STATUSES.map(function (status) {
+                  return '<option value="' + status + '"' + (order.status === status ? ' selected' : '') + '>' + STATUS_LABELS[status] + '</option>';
+                }).join('') +
+              '</select></td>' +
+            '</tr>';
+          }).join('') + '</tbody></table>';
+      }
+
+      function renderRatings() {
+        const ratings = getAllRatings();
+        const el = document.getElementById('ratings');
+
+        if (!ratings.length) {
+          el.innerHTML = '<div class="empty-state" style="border:none;background:transparent"><h3>Оценок пока нет</h3><p>После доставки клиент сможет подтвердить получение и поставить оценку.</p></div>';
+          return;
+        }
+
+        el.innerHTML = '<table class="data-table"><thead><tr><th>Заказ</th><th>Клиент</th><th>Оценка</th><th>Отзыв</th><th>Дата</th></tr></thead><tbody>' +
+          ratings.map(function (rating) {
+            return '<tr>' +
+              '<td>#' + rating.orderId + '</td>' +
+              '<td>' + escapeHtml(rating.userName) + '</td>' +
+              '<td><span style="color:#D7B36A;font-size:15px">' + '★'.repeat(rating.rating) + '☆'.repeat(5 - rating.rating) + '</span></td>' +
+              '<td>' + (rating.review ? escapeHtml(rating.review) : '<small>без отзыва</small>') + '</td>' +
+              '<td><small>' + new Date(rating.date).toLocaleString('ru-RU') + '</small></td>' +
+            '</tr>';
+          }).join('') + '</tbody></table>';
+      }
+
+      function renderUsers() {
+        const roleNames = { admin: 'Администратор', assembler: 'Сборщик', courier: 'Курьер', client: 'Клиент' };
+        document.getElementById('users').innerHTML = '<table class="data-table"><thead><tr><th>ID</th><th>Имя</th><th>Email</th><th>Телефон</th><th>Роль</th></tr></thead><tbody>' +
+          getUsers().map(function (user) {
+            return '<tr><td>' + user.id + '</td><td>' + escapeHtml(user.name) + '</td><td>' + escapeHtml(user.email) + '</td><td>' + escapeHtml(user.phone || '—') + '</td><td>' + (roleNames[user.role] || user.role) + '</td></tr>';
+          }).join('') + '</tbody></table>';
+      }
+
+      function renderMessages() {
+        let list = [];
+        try { list = JSON.parse(localStorage.getItem('contactMessages') || '[]'); } catch (error) { list = []; }
+        list = list.slice().reverse();
+        const el = document.getElementById('messages');
+
+        if (!list.length) {
+          el.innerHTML = '<div class="empty-state" style="border:none;background:transparent"><h3>Обращений нет</h3><p>Сообщения из формы обратной связи появятся здесь.</p></div>';
+          return;
+        }
+
+        el.innerHTML = '<table class="data-table"><thead><tr><th>Дата</th><th>Имя</th><th>Email</th><th>Тема</th><th>Сообщение</th></tr></thead><tbody>' +
+          list.map(function (message) {
+            return '<tr>' +
+              '<td><small>' + new Date(message.date).toLocaleString('ru-RU') + '</small></td>' +
+              '<td>' + escapeHtml(message.name) + '</td>' +
+              '<td>' + escapeHtml(message.email) + '</td>' +
+              '<td>' + escapeHtml(message.subject || '—') + '</td>' +
+              '<td>' + escapeHtml(message.message) + '</td>' +
+            '</tr>';
+          }).join('') + '</tbody></table>';
+      }
+
+      document.getElementById('orders').addEventListener('change', function (event) {
+        const select = event.target.closest('[data-status-order]');
+        if (!select) return;
+        updateOrderStatus(Number(select.dataset.statusOrder), select.value);
+        showToast('Статус заказа обновлён', 'success');
+        renderStats();
+        renderOrders();
+      });
+
+      renderStats();
+      renderOrders();
+      renderRatings();
+      renderUsers();
+      renderMessages();
+    });
+  </script>
+</body>
+</html>
